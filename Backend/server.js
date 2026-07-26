@@ -212,6 +212,71 @@ app.post("/expenses", verifyToken, async (req, res) => {
   }
 });
 
+app.get("/groups/:groupId/settlements", verifyToken, async (req, res) => {
+  try {
+    const { groupId } = req.params;
+
+    const groupMembers = await prisma.groupMember.findMany({
+      where: { groupId: Number(groupId) },
+      include: { user: true },
+    });
+
+    const balances = [];
+
+    for (const member of groupMembers) {
+      const expensesPaid = await prisma.expense.findMany({
+        where: { groupId: Number(groupId), paidBy: member.userId },
+      });
+
+      const totalPaid = expensesPaid.reduce((sum, expense) => sum + expense.amount, 0);
+
+      const sharesOwed = await prisma.expenseShare.findMany({
+        where: { userId: member.userId, expense: { groupId: Number(groupId) } },
+      });
+
+      const totalOwed = sharesOwed.reduce((sum, share) => sum + share.amountOwed, 0);
+
+      balances.push({
+        userId: member.userId,
+        name: member.user.name,
+        balance: totalPaid - totalOwed,
+      });
+    }
+
+    const debtors = balances.filter((b) => b.balance < 0).map((b) => ({ ...b }));
+    const creditors = balances.filter((b) => b.balance > 0).map((b) => ({ ...b }));
+
+    const settlements = [];
+
+    while (debtors.length > 0 && creditors.length > 0) {
+      debtors.sort((a, b) => a.balance - b.balance);
+      creditors.sort((a, b) => b.balance - a.balance);
+
+      const debtor = debtors[0];
+      const creditor = creditors[0];
+
+      const amountToSettle = Math.min(-debtor.balance, creditor.balance);
+
+      settlements.push({
+        from: debtor.name,
+        to: creditor.name,
+        amount: amountToSettle,
+      });
+
+      debtor.balance += amountToSettle;
+      creditor.balance -= amountToSettle;
+
+      if (debtor.balance === 0) debtors.shift();
+      if (creditor.balance === 0) creditors.shift();
+    }
+
+    res.status(200).json({ settlements: settlements });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
 
 const PORT = process.env.PORT || 3000;
 
