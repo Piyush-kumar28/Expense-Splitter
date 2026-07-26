@@ -7,6 +7,22 @@ const prisma = require("./prismaClient");
 const verifyToken = require("./middleware");
 const app = express();
 
+async function checkGroupMembership(groupId, userId) {
+  const group = await prisma.group.findUnique({ where: { id: groupId } });
+  if (!group) {
+    return { error: "Group not found", status: 404 };
+  }
+
+  const membership = await prisma.groupMember.findFirst({
+    where: { groupId: groupId, userId: userId },
+  });
+
+  if (!membership) {
+    return { error: "You are not a member of this group", status: 403 };
+  }
+  return { group, membership };
+}
+
 app.use(cors());
 app.use(express.json());
 app.get("/", (req, res) => {
@@ -15,10 +31,16 @@ app.get("/", (req, res) => {
 
 app.post("/signup", async (req, res) => {
   try {
-    const { name, email, password } = req.body || {};
-    if (!name || !email || !password) {
+    const { name, password } = req.body || {};
+const email = req.body?.email?.trim().toLowerCase();
+
+if (!name || !email || !password) {
   return res.status(400).json({ message: "Name, email and password are required" });
-  }
+}
+
+if (password.length < 6) {
+  return res.status(400).json({ message: "Password must be at least 6 characters" });
+}
     const existingUser = await prisma.user.findUnique({
       where: { email: email },
     });
@@ -46,7 +68,8 @@ app.post("/signup", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body || {};
+    const { password } = req.body || {};
+    const email = req.body?.email?.trim().toLowerCase();
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
@@ -81,7 +104,7 @@ app.post("/login", async (req, res) => {
 
 app.post("/groups", verifyToken, async (req, res) => {
   try {
-    const { name } = req.body || {};
+    const name = req.body?.name?.trim();
 
     if (!name) {
       return res.status(400).json({ message: "Group name is required" });
@@ -111,10 +134,41 @@ app.post("/groups", verifyToken, async (req, res) => {
 app.post("/groups/:groupId/members", verifyToken, async (req, res) => {
   try {
     const { groupId } = req.params;
+    if (isNaN(Number(groupId))) {
+  return res.status(400).json({ message: "Invalid group ID" });
+    }
     const { userId } = req.body || {};
 
     if (!userId) {
       return res.status(400).json({ message: "userId is required" });
+    }
+
+    const group = await prisma.group.findUnique({ where: { id: Number(groupId) } });
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+
+    const requesterMembership = await prisma.groupMember.findFirst({
+      where: { groupId: Number(groupId), userId: req.userId },
+    });
+    if (!requesterMembership) {
+      return res.status(403).json({ message: "You are not a member of this group" });
+    }
+
+    const userToAdd = await prisma.user.findUnique({ where: { id: Number(userId) } });
+    if (!userToAdd) {
+      return res.status(404).json({ message: "User to add does not exist" });
+    }
+
+    const existingMembership = await prisma.groupMember.findFirst({
+      where: {
+        groupId: Number(groupId),
+        userId: Number(userId),
+      },
+    });
+
+    if (existingMembership) {
+      return res.status(400).json({ message: "User is already a member of this group" });
     }
 
     const newMember = await prisma.groupMember.create({
@@ -133,11 +187,18 @@ app.post("/groups/:groupId/members", verifyToken, async (req, res) => {
 
 app.post("/expenses", verifyToken, async (req, res) => {
   try {
-    const { groupId, description, amount } = req.body || {};
+    const description = req.body?.description?.trim();
+    const amount = Number(req.body?.amount);
+    const groupId = Number(req.body?.groupId);
 
-    if (!groupId || !description || !amount) {
-      return res.status(400).json({ message: "groupId, description and amount are required" });
-    }
+    if (!groupId || !description || typeof amount !== "number" || amount <= 0) {
+  return res.status(400).json({ message: "Valid groupId, description and a positive amount are required" });
+}
+
+const check = await checkGroupMembership(groupId, req.userId);
+if (check.error) {
+  return res.status(check.status).json({ message: check.error });
+}
 
     const groupMembers = await prisma.groupMember.findMany({
       where: { groupId: groupId },
@@ -156,13 +217,19 @@ app.post("/expenses", verifyToken, async (req, res) => {
       },
     });
 
-    const shareAmount = amount / groupMembers.length;
+    const totalPaise = Math.round(amount * 100);
+    const numMembers = groupMembers.length;
+    const basePaise = Math.floor(totalPaise / numMembers);
+    const remainderPaise = totalPaise - basePaise * numMembers;
 
-    const shareData = groupMembers.map((member) => ({
-      expenseId: newExpense.id,
-      userId: member.userId,
-      amountOwed: shareAmount,
-    }));
+    const shareData = groupMembers.map((member, index) => {
+      const sharePaise = basePaise + (index < remainderPaise ? 1 : 0);
+      return {
+        expenseId: newExpense.id,
+        userId: member.userId,
+        amountOwed: sharePaise / 100,
+      };
+    });
 
     await prisma.expenseShare.createMany({
       data: shareData,
@@ -177,12 +244,18 @@ app.post("/expenses", verifyToken, async (req, res) => {
   app.get("/groups/:groupId/balances", verifyToken, async (req, res) => {
   try {
     const { groupId } = req.params;
-
+    if (isNaN(Number(groupId))) {
+  return res.status(400).json({ message: "Invalid group ID" });
+}
     const groupMembers = await prisma.groupMember.findMany({
       where: { groupId: Number(groupId) },
       include: { user: true },
     });
 
+    const check = await checkGroupMembership(Number(groupId), req.userId);
+if (check.error) {
+  return res.status(check.status).json({ message: check.error });
+}
     const balances = [];
 
     for (const member of groupMembers) {
@@ -199,10 +272,10 @@ app.post("/expenses", verifyToken, async (req, res) => {
       const totalOwed = sharesOwed.reduce((sum, share) => sum + share.amountOwed, 0);
 
       balances.push({
-        userId: member.userId,
-        name: member.user.name,
-        balance: totalPaid - totalOwed,
-      });
+      userId: member.userId,
+      name: member.user.name,
+      balance: Math.round((totalPaid - totalOwed) * 100) / 100,
+    });
     }
 
     res.status(200).json({ balances: balances });
@@ -215,11 +288,19 @@ app.post("/expenses", verifyToken, async (req, res) => {
 app.get("/groups/:groupId/settlements", verifyToken, async (req, res) => {
   try {
     const { groupId } = req.params;
+    if (isNaN(Number(groupId))) {
+      return res.status(400).json({ message: "Invalid group ID" });
+    }
 
     const groupMembers = await prisma.groupMember.findMany({
       where: { groupId: Number(groupId) },
       include: { user: true },
     });
+
+   const check = await checkGroupMembership(Number(groupId), req.userId);
+if (check.error) {
+  return res.status(check.status).json({ message: check.error });
+}
 
     const balances = [];
 
@@ -255,19 +336,19 @@ app.get("/groups/:groupId/settlements", verifyToken, async (req, res) => {
       const debtor = debtors[0];
       const creditor = creditors[0];
 
-      const amountToSettle = Math.min(-debtor.balance, creditor.balance);
+      const amountToSettle = Math.round(Math.min(-debtor.balance, creditor.balance) * 100) / 100;
 
       settlements.push({
-        from: debtor.name,
-        to: creditor.name,
-        amount: amountToSettle,
-      });
+      from: debtor.name,
+      to: creditor.name,
+      amount: amountToSettle,
+    });
 
-      debtor.balance += amountToSettle;
-      creditor.balance -= amountToSettle;
+      debtor.balance = Math.round((debtor.balance + amountToSettle) * 100) / 100;
+      creditor.balance = Math.round((creditor.balance - amountToSettle) * 100) / 100;
 
-      if (debtor.balance === 0) debtors.shift();
-      if (creditor.balance === 0) creditors.shift();
+      if (Math.abs(debtor.balance) < 0.01) debtors.shift();
+      if (Math.abs(creditor.balance) < 0.01) creditors.shift();
     }
 
     res.status(200).json({ settlements: settlements });
