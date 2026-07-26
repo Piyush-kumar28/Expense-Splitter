@@ -4,12 +4,11 @@ const cors = require("cors");
 require("dotenv").config();
 const bcrypt = require("bcrypt");
 const prisma = require("./prismaClient");
-
+const verifyToken = require("./middleware");
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-
 app.get("/", (req, res) => {
   res.send("Backend is working");
 });
@@ -74,6 +73,35 @@ app.post("/login", async (req, res) => {
     );
 
     res.status(200).json({ message: "Login successful", token: token });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+app.post("/groups", verifyToken, async (req, res) => {
+  try {
+    const { name } = req.body || {};
+
+    if (!name) {
+      return res.status(400).json({ message: "Group name is required" });
+    }
+
+    const newGroup = await prisma.group.create({
+      data: {
+        name: name,
+        createdBy: req.userId,
+      },
+    });
+
+    await prisma.groupMember.create({
+      data: {
+        userId: req.userId,
+        groupId: newGroup.id,
+      },
+    });
+
+    res.status(201).json({ message: "Group created successfully", group: newGroup });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Something went wrong" });
