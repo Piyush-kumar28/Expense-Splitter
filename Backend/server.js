@@ -108,6 +108,73 @@ app.post("/groups", verifyToken, async (req, res) => {
   }
 });
 
+app.post("/groups/:groupId/members", verifyToken, async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { userId } = req.body || {};
+
+    if (!userId) {
+      return res.status(400).json({ message: "userId is required" });
+    }
+
+    const newMember = await prisma.groupMember.create({
+      data: {
+        userId: Number(userId),
+        groupId: Number(groupId),
+      },
+    });
+
+    res.status(201).json({ message: "Member added successfully", member: newMember });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+app.post("/expenses", verifyToken, async (req, res) => {
+  try {
+    const { groupId, description, amount } = req.body || {};
+
+    if (!groupId || !description || !amount) {
+      return res.status(400).json({ message: "groupId, description and amount are required" });
+    }
+
+    const groupMembers = await prisma.groupMember.findMany({
+      where: { groupId: groupId },
+    });
+
+    if (groupMembers.length === 0) {
+      return res.status(400).json({ message: "This group has no members" });
+    }
+
+    const newExpense = await prisma.expense.create({
+      data: {
+        description: description,
+        amount: amount,
+        paidBy: req.userId,
+        groupId: groupId,
+      },
+    });
+
+    const shareAmount = amount / groupMembers.length;
+
+    const shareData = groupMembers.map((member) => ({
+      expenseId: newExpense.id,
+      userId: member.userId,
+      amountOwed: shareAmount,
+    }));
+
+    await prisma.expenseShare.createMany({
+      data: shareData,
+    });
+
+    res.status(201).json({ message: "Expense added successfully", expense: newExpense });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
