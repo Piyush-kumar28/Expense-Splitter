@@ -174,6 +174,44 @@ app.post("/expenses", verifyToken, async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
+  app.get("/groups/:groupId/balances", verifyToken, async (req, res) => {
+  try {
+    const { groupId } = req.params;
+
+    const groupMembers = await prisma.groupMember.findMany({
+      where: { groupId: Number(groupId) },
+      include: { user: true },
+    });
+
+    const balances = [];
+
+    for (const member of groupMembers) {
+      const expensesPaid = await prisma.expense.findMany({
+        where: { groupId: Number(groupId), paidBy: member.userId },
+      });
+
+      const totalPaid = expensesPaid.reduce((sum, expense) => sum + expense.amount, 0);
+
+      const sharesOwed = await prisma.expenseShare.findMany({
+        where: { userId: member.userId, expense: { groupId: Number(groupId) } },
+      });
+
+      const totalOwed = sharesOwed.reduce((sum, share) => sum + share.amountOwed, 0);
+
+      balances.push({
+        userId: member.userId,
+        name: member.user.name,
+        balance: totalPaid - totalOwed,
+      });
+    }
+
+    res.status(200).json({ balances: balances });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
 
 const PORT = process.env.PORT || 3000;
 
