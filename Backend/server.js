@@ -357,6 +357,21 @@ if (check.error) {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
+app.get("/my-groups", verifyToken, async (req, res) => {
+  try {
+    const memberships = await prisma.groupMember.findMany({
+      where: { userId: req.userId },
+      include: { group: true },
+    });
+
+    const groups = memberships.map((m) => m.group);
+
+    res.status(200).json({ groups: groups });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
 
 
 const PORT = process.env.PORT || 3000;
