@@ -1,5 +1,10 @@
 import axiosInstance from "./axiosInstance";
 
+export async function getMyGroups() {
+  const response = await axiosInstance.get("/my-groups");
+  return response.data;
+}
+
 export async function createGroup(name) {
   const response = await axiosInstance.post("/groups", { name });
   return response.data;
