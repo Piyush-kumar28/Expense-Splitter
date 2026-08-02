@@ -399,6 +399,39 @@ app.get("/my-groups", verifyToken, async (req, res) => {
   }
 });
 
+app.get("/groups/:groupId/expenses", verifyToken, async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    if (isNaN(Number(groupId))) {
+      return res.status(400).json({ message: "Invalid group ID" });
+    }
+
+    const check = await checkGroupMembership(Number(groupId), req.userId);
+    if (check.error) {
+      return res.status(check.status).json({ message: check.error });
+    }
+
+    const expenses = await prisma.expense.findMany({
+      where: { groupId: Number(groupId) },
+      include: { payer: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const formatted = expenses.map((e) => ({
+      id: e.id,
+      description: e.description,
+      amount: e.amount,
+      paidByName: e.payer.name,
+      createdAt: e.createdAt,
+    }));
+
+    res.status(200).json({ expenses: formatted });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
 
 const PORT = process.env.PORT || 3000;
 
