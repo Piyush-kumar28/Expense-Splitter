@@ -135,12 +135,13 @@ app.post("/groups/:groupId/members", verifyToken, async (req, res) => {
   try {
     const { groupId } = req.params;
     if (isNaN(Number(groupId))) {
-  return res.status(400).json({ message: "Invalid group ID" });
+      return res.status(400).json({ message: "Invalid group ID" });
     }
-    const { userId } = req.body || {};
 
-    if (!userId) {
-      return res.status(400).json({ message: "userId is required" });
+    const email = req.body?.email?.trim().toLowerCase();
+
+    if (!email) {
+      return res.status(400).json({ message: "email is required" });
     }
 
     const group = await prisma.group.findUnique({ where: { id: Number(groupId) } });
@@ -155,15 +156,15 @@ app.post("/groups/:groupId/members", verifyToken, async (req, res) => {
       return res.status(403).json({ message: "You are not a member of this group" });
     }
 
-    const userToAdd = await prisma.user.findUnique({ where: { id: Number(userId) } });
+    const userToAdd = await prisma.user.findUnique({ where: { email: email } });
     if (!userToAdd) {
-      return res.status(404).json({ message: "User to add does not exist" });
+      return res.status(404).json({ message: "No user found with this email" });
     }
 
     const existingMembership = await prisma.groupMember.findFirst({
       where: {
         groupId: Number(groupId),
-        userId: Number(userId),
+        userId: userToAdd.id,
       },
     });
 
@@ -173,7 +174,7 @@ app.post("/groups/:groupId/members", verifyToken, async (req, res) => {
 
     const newMember = await prisma.groupMember.create({
       data: {
-        userId: Number(userId),
+        userId: userToAdd.id,
         groupId: Number(groupId),
       },
     });
