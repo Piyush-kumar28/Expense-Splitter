@@ -123,8 +123,26 @@ app.post("/groups", verifyToken, async (req, res) => {
         groupId: newGroup.id,
       },
     });
-
     res.status(201).json({ message: "Group created successfully", group: newGroup });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+   app.get("/groups/:groupId", verifyToken, async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    if (isNaN(Number(groupId))) {
+      return res.status(400).json({ message: "Invalid group ID" });
+    }
+
+    const check = await checkGroupMembership(Number(groupId), req.userId);
+    if (check.error) {
+      return res.status(check.status).json({ message: check.error });
+    }
+
+    res.status(200).json({ group: check.group });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Something went wrong" });
