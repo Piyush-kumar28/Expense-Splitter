@@ -227,14 +227,21 @@ if (check.error) {
       return res.status(400).json({ message: "This group has no members" });
     }
 
-    const newExpense = await prisma.expense.create({
-      data: {
-        description: description,
-        amount: amount,
-        paidBy: req.userId,
-        groupId: groupId,
-      },
-    });
+   const paidBy = req.body?.paidBy ? Number(req.body.paidBy) : req.userId;
+
+const payerIsMember = groupMembers.some((m) => m.userId === paidBy);
+if (!payerIsMember) {
+  return res.status(400).json({ message: "The selected payer is not a member of this group" });
+}
+
+const newExpense = await prisma.expense.create({
+  data: {
+    description: description,
+    amount: amount,
+    paidBy: paidBy,
+    groupId: groupId,
+  },
+});
 
     const totalPaise = Math.round(amount * 100);
     const numMembers = groupMembers.length;
