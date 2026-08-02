@@ -41,3 +41,8 @@ export async function getGroup(groupId) {
   const response = await axiosInstance.get(`/groups/${groupId}`);
   return response.data;
 }
+
+export async function getExpenses(groupId) {
+  const response = await axiosInstance.get(`/groups/${groupId}/expenses`);
+  return response.data;
+}

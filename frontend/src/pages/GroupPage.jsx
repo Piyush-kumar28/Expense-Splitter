@@ -6,6 +6,7 @@ import {
   addExpense,
   addMember,
   getGroup,
+  getExpenses,
 } from "../api/groups";
 import { jwtDecode } from "jwt-decode";
 import { useAuth } from "../context/AuthContext";
@@ -15,6 +16,7 @@ function GroupPage() {
   const [balances, setBalances] = useState([]);
   const [groupName, setGroupName] = useState("");
   const [settlements, setSettlements] = useState([]);
+  const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [paidBy, setPaidBy] = useState("");
@@ -29,15 +31,17 @@ const currentUserId = token ? jwtDecode(token).userId : null;
     loadData();
   }, [groupId]);
 
-  async function loadData() {
+ async function loadData() {
   setLoading(true);
   try {
     const groupData = await getGroup(groupId);
     const balancesData = await getBalances(groupId);
     const settlementsData = await getSettlements(groupId);
+    const expensesData = await getExpenses(groupId);
     setGroupName(groupData.group.name);
     setBalances(balancesData.balances);
     setSettlements(settlementsData.settlements);
+    setExpenses(expensesData.expenses);
   } catch (err) {
     setError("Failed to load group data");
   } finally {
@@ -142,6 +146,28 @@ async function handleAddMember(e) {
                   <span className="text-muted"> → </span>
                   <span className="font-medium">{s.to}</span>
                   <span className="text-muted">: ₹{s.amount.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+</div>
+
+        {/* Expense history section */}
+        <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
+          <h2 className="font-display text-xl font-semibold text-ink mb-4">
+            Recent expenses
+          </h2>
+          {expenses.length === 0 ? (
+            <p className="text-muted text-sm">No expenses yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {expenses.map((e) => (
+                <div key={e.id} className="flex justify-between items-center">
+                  <div>
+                    <p className="text-ink text-sm">{e.description}</p>
+                    <p className="text-muted text-xs">Paid by {e.paidByName}</p>
+                  </div>
+                  <span className="text-ink font-medium">₹{e.amount.toFixed(2)}</span>
                 </div>
               ))}
             </div>
