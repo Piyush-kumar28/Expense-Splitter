@@ -1,5 +1,227 @@
+import { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import {
+  getBalances,
+  getSettlements,
+  addExpense,
+  addMember,
+  getGroup,
+} from "../api/groups";
+import { jwtDecode } from "jwt-decode";
+import { useAuth } from "../context/AuthContext";
 function GroupPage() {
-  return <div className="p-8">Group Page</div>;
+
+  const { groupId } = useParams();
+  const [balances, setBalances] = useState([]);
+  const [groupName, setGroupName] = useState("");
+  const [settlements, setSettlements] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [paidBy, setPaidBy] = useState("");
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+  const { token } = useAuth();
+const currentUserId = token ? jwtDecode(token).userId : null;
+
+
+  useEffect(() => {
+    loadData();
+  }, [groupId]);
+
+  async function loadData() {
+  setLoading(true);
+  try {
+    const groupData = await getGroup(groupId);
+    const balancesData = await getBalances(groupId);
+    const settlementsData = await getSettlements(groupId);
+    setGroupName(groupData.group.name);
+    setBalances(balancesData.balances);
+    setSettlements(settlementsData.settlements);
+  } catch (err) {
+    setError("Failed to load group data");
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function handleAddMember(e) {
+  e.preventDefault();
+  setError("");
+  try {
+    await addMember(groupId, memberEmail);
+    setMemberEmail("");
+    loadData();
+  } catch (err) {
+    const message = err.response?.data?.message || "Something went wrong";
+    setError(message);
+  }
+}
+
+  async function handleAddExpense(e) {
+  e.preventDefault();
+  setError("");
+  try {
+    await addExpense(Number(groupId), description, Number(amount), paidBy || undefined);
+    setDescription("");
+    setAmount("");
+    setPaidBy("");
+    loadData();
+  } catch (err) {
+    const message = err.response?.data?.message || "Something went wrong";
+    setError(message);
+  }
+}
+
+  if (loading) {
+    return <div className="min-h-screen bg-paper p-8 text-muted">Loading...</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-paper px-4 py-8">
+      <div className="max-w-2xl mx-auto">
+        <Link to="/dashboard" className="text-sm text-muted hover:text-ink underline">
+          ← Back to groups
+        </Link>
+
+        <h1 className="font-display text-4xl font-semibold text-ink mt-4 mb-8">
+          {groupName}
+        </h1>
+
+        {error && (
+          <div className="bg-negative/10 text-negative text-sm rounded-md px-4 py-3 mb-6">
+            {error}
+          </div>
+        )}
+
+        {/* Balances section */}
+        <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
+          <h2 className="font-display text-xl font-semibold text-ink mb-4">
+            Balances
+          </h2>
+          {balances.length === 0 ? (
+            <p className="text-muted text-sm">No members yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {balances.map((b) => (
+                <div key={b.userId} className="flex justify-between items-center">
+                  <span className="text-ink">{b.name}</span>
+                  <span
+                    className={
+                      b.balance > 0
+                        ? "text-positive font-medium"
+                        : b.balance < 0
+                        ? "text-negative font-medium"
+                        : "text-muted"
+                    }
+                  >
+                    {b.balance > 0
+                      ? `is owed ₹${b.balance.toFixed(2)}`
+                      : b.balance < 0
+                      ? `owes ₹${Math.abs(b.balance).toFixed(2)}`
+                      : "settled up"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Settlements section */}
+        <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
+          <h2 className="font-display text-xl font-semibold text-ink mb-4">
+            Suggested settlements
+          </h2>
+          {settlements.length === 0 ? (
+            <p className="text-muted text-sm">Everyone is settled up.</p>
+          ) : (
+            <div className="space-y-2">
+              {settlements.map((s, i) => (
+                <div key={i} className="text-ink">
+                  <span className="font-medium">{s.from}</span>
+                  <span className="text-muted"> → </span>
+                  <span className="font-medium">{s.to}</span>
+                  <span className="text-muted">: ₹{s.amount.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Add expense form */}
+        <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
+          <h2 className="font-display text-xl font-semibold text-ink mb-4">
+            Add an expense
+          </h2>
+          <form onSubmit={handleAddExpense} className="flex gap-2">
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description"
+              className="flex-1 border border-divider rounded-md px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-gold"
+              required
+            />
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Amount"
+              step="0.01"
+              min="0.01"
+              className="w-32 border border-divider rounded-md px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-gold"
+              required
+            />
+            
+            <select
+  value={paidBy}
+  onChange={(e) => setPaidBy(e.target.value)}
+  className="border border-divider rounded-md px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-gold"
+>
+  <option value="">You paid</option>
+  {balances
+  .filter((b) => b.userId !== currentUserId)
+  .map((b) => (
+    <option key={b.userId} value={b.userId}>
+      {b.name} paid
+    </option>
+  ))}
+</select>
+
+            <button
+              type="submit"
+              className="bg-ink text-paper font-medium rounded-md px-5 py-2 hover:opacity-90 transition"
+            >
+              Add
+            </button>
+          </form>
+        </div>
+
+        {/* Add member form */}
+        <div className="bg-surface border border-divider rounded-lg p-6">
+          <h2 className="font-display text-xl font-semibold text-ink mb-4">
+            Add a member
+          </h2>
+          <form onSubmit={handleAddMember} className="flex gap-2">
+            <input
+              type="email"
+              value={memberEmail}
+              onChange={(e) => setMemberEmail(e.target.value)}
+              placeholder="Friend's email"
+              className="flex-1 border border-divider rounded-md px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-gold"
+              required
+            />
+            <button
+              type="submit"
+              className="bg-ink text-paper font-medium rounded-md px-5 py-2 hover:opacity-90 transition"
+            >
+              Add
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default GroupPage;

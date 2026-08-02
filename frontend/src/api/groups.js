@@ -10,18 +10,19 @@ export async function createGroup(name) {
   return response.data;
 }
 
-export async function addMember(groupId, userId) {
+export async function addMember(groupId, email) {
   const response = await axiosInstance.post(`/groups/${groupId}/members`, {
-    userId,
+    email,
   });
   return response.data;
 }
 
-export async function addExpense(groupId, description, amount) {
+export async function addExpense(groupId, description, amount, paidBy) {
   const response = await axiosInstance.post("/expenses", {
     groupId,
     description,
     amount,
+    paidBy,
   });
   return response.data;
 }
@@ -33,5 +34,10 @@ export async function getBalances(groupId) {
 
 export async function getSettlements(groupId) {
   const response = await axiosInstance.get(`/groups/${groupId}/settlements`);
+  return response.data;
+}
+
+export async function getGroup(groupId) {
+  const response = await axiosInstance.get(`/groups/${groupId}`);
   return response.data;
 }
