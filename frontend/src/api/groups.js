@@ -46,3 +46,15 @@ export async function getExpenses(groupId) {
   const response = await axiosInstance.get(`/groups/${groupId}/expenses`);
   return response.data;
 }
+
+export async function recordSettlement(groupId, toUserId, amount) {
+  const response = await axiosInstance.post(
+    `/groups/${groupId}/settlements`,
+    {
+      toUserId,
+      amount,
+    }
+  );
+
+  return response.data;
+}

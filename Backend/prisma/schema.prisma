@@ -21,6 +21,8 @@ model User {
   memberships  GroupMember[]
   expensesPaid Expense[]
   owedShares   ExpenseShare[]
+  settlementsSent     Settlement[] @relation("SettlementFrom")
+  settlementsReceived Settlement[] @relation("SettlementTo")
 }
 model Group {
   id        Int           @id @default(autoincrement())
@@ -30,6 +32,7 @@ model Group {
   createdAt DateTime      @default(now())
   members   GroupMember[]
   expenses  Expense[]
+  settlements Settlement[]
 }
 model GroupMember {
   id       Int      @id @default(autoincrement())
@@ -59,4 +62,16 @@ model ExpenseShare {
   amountOwed Float
   expense    Expense  @relation(fields: [expenseId], references: [id])
   user       User     @relation(fields: [userId], references: [id])
+}
+
+model Settlement {
+  id         Int      @id @default(autoincrement())
+  groupId    Int
+  fromUserId Int
+  toUserId   Int
+  amount     Float
+  group      Group    @relation(fields: [groupId], references: [id])
+  fromUser   User     @relation("SettlementFrom", fields: [fromUserId], references: [id])
+  toUser     User     @relation("SettlementTo", fields: [toUserId], references: [id])
+  createdAt  DateTime @default(now())
 }

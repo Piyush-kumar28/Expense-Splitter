@@ -7,6 +7,7 @@ import {
   addMember,
   getGroup,
   getExpenses,
+  recordSettlement,
 } from "../api/groups";
 import { jwtDecode } from "jwt-decode";
 import { useAuth } from "../context/AuthContext";
@@ -24,6 +25,7 @@ function GroupPage() {
   const [amount, setAmount] = useState("");
   const [memberEmail, setMemberEmail] = useState("");
   const { token } = useAuth();
+  const [settlingIndex, setSettlingIndex] = useState(null);
 const currentUserId = token ? jwtDecode(token).userId : null;
 
 
@@ -59,6 +61,19 @@ async function handleAddMember(e) {
   } catch (err) {
     const message = err.response?.data?.message || "Something went wrong";
     setError(message);
+  }
+}
+
+async function handleMarkSettled(settlement, index) {
+  setSettlingIndex(index);
+  try {
+    await recordSettlement(groupId, settlement.toUserId, settlement.amount);
+    loadData();
+  } catch (err) {
+    const message = err.response?.data?.message || "Something went wrong";
+    setError(message);
+  } finally {
+    setSettlingIndex(null);
   }
 }
 
@@ -141,13 +156,25 @@ async function handleAddMember(e) {
           ) : (
             <div className="space-y-2">
               {settlements.map((s, i) => (
-                <div key={i} className="text-ink">
-                  <span className="font-medium">{s.from}</span>
-                  <span className="text-muted"> → </span>
-                  <span className="font-medium">{s.to}</span>
-                  <span className="text-muted">: ₹{s.amount.toFixed(2)}</span>
-                </div>
-              ))}
+  <div key={i} className="flex justify-between items-center">
+    <div className="text-ink">
+      <span className="font-medium">{s.from}</span>
+      <span className="text-muted"> → </span>
+      <span className="font-medium">{s.to}</span>
+      <span className="text-muted">: ₹{s.amount.toFixed(2)}</span>
+    </div>
+  
+  {s.fromUserId === currentUserId && (
+  <button
+    onClick={() => handleMarkSettled(s, i)}
+    disabled={settlingIndex === i}
+    className="text-xs bg-ink text-paper rounded-md px-3 py-1 hover:opacity-90 transition disabled:opacity-50"
+  >
+    {settlingIndex === i ? "Settling..." : "Mark settled"}
+  </button>
+)}
+  </div>
+))}
             </div>
           )}
 </div>

@@ -297,11 +297,27 @@ if (check.error) {
 
       const totalOwed = sharesOwed.reduce((sum, share) => sum + share.amountOwed, 0);
 
+      const settlementsSent = await prisma.settlement.findMany({
+  where: { groupId: Number(groupId), fromUserId: member.userId },
+});
+const totalSettlementsSent = settlementsSent.reduce((sum, s) => sum + s.amount, 0);
+
+const settlementsReceived = await prisma.settlement.findMany({
+  where: { groupId: Number(groupId), toUserId: member.userId },
+});
+const totalSettlementsReceived = settlementsReceived.reduce((sum, s) => sum + s.amount, 0);
+
       balances.push({
-      userId: member.userId,
-      name: member.user.name,
-      balance: Math.round((totalPaid - totalOwed) * 100) / 100,
-    });
+  userId: member.userId,
+  name: member.user.name,
+  balance: Math.round(
+(totalPaid
+- totalOwed
++ totalSettlementsSent
+- totalSettlementsReceived)
+*100
+)/100,
+});
     }
 
     res.status(200).json({ balances: balances });
@@ -343,11 +359,42 @@ if (check.error) {
 
       const totalOwed = sharesOwed.reduce((sum, share) => sum + share.amountOwed, 0);
 
+      const settlementsSent = await prisma.settlement.findMany({
+  where: {
+    groupId: Number(groupId),
+    fromUserId: member.userId,
+  },
+});
+
+const totalSettlementsSent = settlementsSent.reduce(
+  (sum, s) => sum + s.amount,
+  0
+);
+
+const settlementsReceived = await prisma.settlement.findMany({
+  where: {
+    groupId: Number(groupId),
+    toUserId: member.userId,
+  },
+});
+
+const totalSettlementsReceived = settlementsReceived.reduce(
+  (sum, s) => sum + s.amount,
+  0
+);
+
       balances.push({
-        userId: member.userId,
-        name: member.user.name,
-        balance: totalPaid - totalOwed,
-      });
+  userId: member.userId,
+  name: member.user.name,
+  balance: Math.round(
+    (
+      totalPaid
+      - totalOwed
+      + totalSettlementsSent
+      - totalSettlementsReceived
+    ) * 100
+  ) / 100,
+});
     }
 
     const debtors = balances.filter((b) => b.balance < 0).map((b) => ({ ...b }));
@@ -365,10 +412,12 @@ if (check.error) {
       const amountToSettle = Math.round(Math.min(-debtor.balance, creditor.balance) * 100) / 100;
 
       settlements.push({
-      from: debtor.name,
-      to: creditor.name,
-      amount: amountToSettle,
-    });
+  fromUserId: debtor.userId,
+  toUserId: creditor.userId,
+  from: debtor.name,
+  to: creditor.name,
+  amount: amountToSettle,
+});
 
       debtor.balance = Math.round((debtor.balance + amountToSettle) * 100) / 100;
       creditor.balance = Math.round((creditor.balance - amountToSettle) * 100) / 100;
@@ -431,6 +480,62 @@ app.get("/groups/:groupId/expenses", verifyToken, async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 });
+
+
+app.post("/groups/:groupId/settlements", verifyToken, async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    if (isNaN(Number(groupId))) {
+      return res.status(400).json({ message: "Invalid group ID" });
+    }
+
+    const check = await checkGroupMembership(Number(groupId), req.userId);
+    if (check.error) {
+      return res.status(check.status).json({ message: check.error });
+    }
+
+    const { toUserId, amount } = req.body || {};
+
+    if (!toUserId || typeof amount !== "number" || amount <= 0) {
+      return res.status(400).json({ message: "Valid toUserId and positive amount are required" });
+    }
+
+    console.log("groupId:", Number(groupId));
+console.log("req.userId:", req.userId);
+console.log("toUserId:", Number(toUserId));
+
+const members = await prisma.groupMember.findMany({
+  where: {
+    groupId: Number(groupId),
+  },
+});
+
+console.log("Members:", members);
+
+    const recipientMembership = await prisma.groupMember.findFirst({
+      where: { groupId: Number(groupId), userId: Number(toUserId) },
+    });
+    if (!recipientMembership) {
+      return res.status(400).json({ message: "Recipient is not a member of this group" });
+    }
+
+
+    const newSettlement = await prisma.settlement.create({
+      data: {
+        groupId: Number(groupId),
+        fromUserId: req.userId,
+        toUserId: Number(toUserId),
+        amount: amount,
+      },
+    });
+
+    res.status(201).json({ message: "Settlement recorded", settlement: newSettlement });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
 
 
 const PORT = process.env.PORT || 3000;
