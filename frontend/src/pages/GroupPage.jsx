@@ -28,6 +28,27 @@ function GroupPage() {
   const [settlingIndex, setSettlingIndex] = useState(null);
 const currentUserId = token ? jwtDecode(token).userId : null;
 
+const avatarPalette = [
+  { bg: "#EEEDFE", text: "#3C3489" },
+  { bg: "#FAECE7", text: "#993C1D" },
+  { bg: "#E1F5EE", text: "#0F6E56" },
+  { bg: "#FBEAF0", text: "#993556" },
+  { bg: "#FAEEDA", text: "#854F0B" },
+];
+
+function getInitials(name) {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function avatarStyle(index) {
+  return avatarPalette[index % avatarPalette.length];
+}
+
 
   useEffect(() => {
     loadData();
@@ -122,9 +143,17 @@ async function handleMarkSettled(settlement, index) {
             <p className="text-muted text-sm">No members yet.</p>
           ) : (
             <div className="space-y-2">
-              {balances.map((b) => (
-                <div key={b.userId} className="flex justify-between items-center">
-                  <span className="text-ink">{b.name}</span>
+              {balances.map((b, i) => (
+                <div key={b.userId} className="flex justify-between items-center py-1">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium shrink-0"
+                      style={{ backgroundColor: avatarStyle(i).bg, color: avatarStyle(i).text }}
+                    >
+                      {getInitials(b.name)}
+                    </div>
+                    <span className="text-ink">{b.name}</span>
+                  </div>
                   <span
                     className={
                       b.balance > 0
