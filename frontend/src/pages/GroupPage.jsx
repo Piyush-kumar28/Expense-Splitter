@@ -123,15 +123,18 @@ async function handleMarkSettled(settlement, index) {
     <Navbar />
     <div className="px-4 py-8">
       <div className="max-w-2xl mx-auto">
-        <Link to="/dashboard" className="text-sm text-muted hover:text-ink underline">
-          ← Back to groups
-        </Link>
+        <Link
+  to="/dashboard"
+  className="inline-flex items-center text-sm text-muted hover:text-ink transition mb-5"
+>
+  ← Back to groups
+</Link>
 
-        <h1 className="font-display text-4xl font-semibold text-ink mt-4 mb-8">
+        <h1 className="font-display text-4xl font-semibold text-ink mb-8">
           {groupName}
         </h1>
 
-         <div className="bg-surface border border-divider rounded-lg p-6">
+         <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
           <h2 className="font-display text-xl font-semibold text-ink mb-4">
             Add a member
           </h2>
@@ -160,45 +163,65 @@ async function handleMarkSettled(settlement, index) {
         )}
 
         {/* Balances section */}
-        <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
-          <h2 className="font-display text-xl font-semibold text-ink mb-4">
-            Balances
-          </h2>
-          {balances.length === 0 ? (
-            <p className="text-muted text-sm">No members yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {balances.map((b, i) => (
-                <div key={b.userId} className="flex justify-between items-center py-1">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium shrink-0"
-                      style={{ backgroundColor: avatarStyle(i).bg, color: avatarStyle(i).text }}
-                    >
-                      {getInitials(b.name)}
-                    </div>
-                    <span className="text-ink">{b.name}</span>
-                  </div>
-                  <span
-                    className={
-                      b.balance > 0
-                        ? "text-positive font-medium"
-                        : b.balance < 0
-                        ? "text-negative font-medium"
-                        : "text-muted"
-                    }
-                  >
-                    {b.balance > 0
-                      ? `is owed ₹${b.balance.toFixed(2)}`
-                      : b.balance < 0
-                      ? `owes ₹${Math.abs(b.balance).toFixed(2)}`
-                      : "settled up"}
-                  </span>
-                </div>
-              ))}
+{/* Balances section */}
+<div className="bg-surface border border-divider rounded-lg p-6 mb-6">
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="font-display text-xl font-semibold text-ink">
+      Balances
+    </h2>
+
+    <span className="text-sm text-muted">
+      {balances.length} {balances.length === 1 ? "member" : "members"}
+    </span>
+  </div>
+
+  {balances.length === 0 ? (
+    <p className="text-muted text-sm">No members yet.</p>
+  ) : (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {balances.map((b, i) => (
+        <div
+          key={b.userId || i}
+          className="flex items-center justify-between border border-divider rounded-md px-4 py-3"
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-medium shrink-0"
+              style={{
+                backgroundColor: avatarStyle(i).bg,
+                color: avatarStyle(i).text,
+              }}
+            >
+              {getInitials(b.name)}
             </div>
-          )}
+
+            <div>
+              <p className="text-ink text-sm font-medium">
+                {b.name}
+              </p>
+
+              <p
+                className={
+                  b.balance > 0
+                    ? "text-positive text-xs font-medium"
+                    : b.balance < 0
+                    ? "text-negative text-xs font-medium"
+                    : "text-muted text-xs"
+                }
+              >
+                {b.balance > 0
+                  ? `is owed ₹${b.balance.toFixed(2)}`
+                  : b.balance < 0
+                  ? `owes ₹${Math.abs(b.balance).toFixed(2)}`
+                  : "settled up"}
+              </p>
+            </div>
+          </div>
         </div>
+      ))}
+    </div>
+  )}
+</div>
 
         {/* Settlements section */}
         <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
@@ -208,8 +231,8 @@ async function handleMarkSettled(settlement, index) {
           {settlements.length === 0 ? (
             <p className="text-muted text-sm">Everyone is settled up.</p>
           ) : (
-            <div className="space-y-2">
-              {settlements.map((s, i) => (
+          <div className="space-y-2">
+            {settlements.map((s, i) => (
   <div key={i} className="flex justify-between items-center">
     <div className="text-ink">
       <span className="font-medium">{s.from}</span>
@@ -228,32 +251,52 @@ async function handleMarkSettled(settlement, index) {
   </button>
 )}
   </div>
-))}
-            </div>
-          )}
+    ))}
+  </div>
+  )}
 </div>
 
         {/* Expense history section */}
-        <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
-          <h2 className="font-display text-xl font-semibold text-ink mb-4">
-            Recent expenses
-          </h2>
-          {expenses.length === 0 ? (
-            <p className="text-muted text-sm">No expenses yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {expenses.map((e) => (
-                <div key={e.id} className="flex justify-between items-center">
-                  <div>
-                    <p className="text-ink text-sm">{e.description}</p>
-                    <p className="text-muted text-xs">Paid by {e.paidByName}</p>
-                  </div>
-                  <span className="text-ink font-medium">₹{e.amount.toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
-          )}
+       <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="font-display text-xl font-semibold text-ink">
+      Recent expenses
+    </h2>
+
+    {expenses.length > 0 && (
+      <span className="text-sm text-muted">
+        {expenses.length} {expenses.length === 1 ? "expense" : "expenses"}
+      </span>
+    )}
+  </div>
+
+  {expenses.length === 0 ? (
+    <p className="text-muted text-sm">No expenses yet.</p>
+  ) : (
+    <div className="space-y-2">
+      {expenses.map((e) => (
+        <div
+  key={e.id}
+  className="flex items-center justify-between gap-4 border border-divider rounded-md px-4 py-3 hover:bg-paper transition"
+>
+          <div className="min-w-0">
+            <p className="text-ink text-sm font-medium truncate">
+              {e.description}
+            </p>
+
+            <p className="text-muted text-xs mt-1">
+              Paid by {e.paidByName}
+            </p>
+          </div>
+
+          <span className="text-ink font-semibold whitespace-nowrap">
+            ₹{e.amount.toFixed(2)}
+          </span>
         </div>
+      ))}
+    </div>
+  )}
+</div>
 
         {/* Add expense form */}
         <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
