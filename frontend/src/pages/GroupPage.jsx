@@ -149,7 +149,7 @@ async function handleMarkSettled(settlement, index) {
             />
             <button
               type="submit"
-              className="bg-ink text-paper font-medium rounded-md px-5 py-2 hover:opacity-90 transition"
+              className="bg-ink text-paper font-medium rounded-md px-5 py-2 hover:opacity-90 transition cursor-pointer"
             >
               Add
             </button>
@@ -245,7 +245,7 @@ async function handleMarkSettled(settlement, index) {
   <button
     onClick={() => handleMarkSettled(s, i)}
     disabled={settlingIndex === i}
-    className="text-xs bg-ink text-paper rounded-md px-3 py-1 hover:opacity-90 transition disabled:opacity-50"
+    className="text-xs bg-ink text-paper rounded-md px-3 py-1 hover:opacity-90 transition disabled:opacity-50 cursor-pointer"
   >
     {settlingIndex === i ? "Settling..." : "Mark settled"}
   </button>
@@ -300,10 +300,14 @@ async function handleMarkSettled(settlement, index) {
 
         {/* Add expense form */}
         <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
-          <h2 className="font-display text-xl font-semibold text-ink mb-4">
-            Add an expense
-          </h2>
-          <form onSubmit={handleAddExpense} className="flex gap-2">
+          <h2 className="font-display text-xl font-semibold text-ink">
+    Add an expense
+  </h2>
+  <p className="text-muted text-sm mt-1">
+    Record a shared expense for this group.
+  </p>
+  </div>
+          <form onSubmit={handleAddExpense} className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={description}
@@ -323,10 +327,10 @@ async function handleMarkSettled(settlement, index) {
               required
             />
             
-            <select
+           <select
   value={paidBy}
   onChange={(e) => setPaidBy(e.target.value)}
-  className="border border-divider rounded-md px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-gold"
+  className="w-40 border border-divider rounded-md px-3 py-2 text-ink bg-surface focus:outline-none focus:ring-2 focus:ring-gold cursor-pointer"
 >
   <option value="">You paid</option>
   {balances
@@ -340,7 +344,7 @@ async function handleMarkSettled(settlement, index) {
 
             <button
               type="submit"
-              className="bg-ink text-paper font-medium rounded-md px-5 py-2 hover:opacity-90 transition"
+              className="bg-ink text-paper font-medium rounded-md px-5 py-2 hover:opacity-90 transition whitespace-nowrap cursor-pointer"
             >
               Add
             </button>
@@ -348,7 +352,6 @@ async function handleMarkSettled(settlement, index) {
         </div>
       </div>
     </div>
-  </div>
   );
 }
 
