@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyGroups, createGroup } from "../api/groups";
-import { useAuth } from "../context/AuthContext";
+import Navbar from "../components/Navbar";
 
 function DashboardPage() {
   const [groups, setGroups] = useState([]);
@@ -9,7 +9,6 @@ function DashboardPage() {
   const [newGroupName, setNewGroupName] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { logoutUser } = useAuth();
 
   useEffect(() => {
     loadGroups();
@@ -35,30 +34,20 @@ function DashboardPage() {
       setNewGroupName("");
       loadGroups();
     } catch (err) {
-      const message = err.response?.data?.message || "Something went wrong";
+      const message =
+        err.response?.data?.message || "Something went wrong";
       setError(message);
     }
   }
 
-  function handleLogout() {
-    logoutUser();
-    navigate("/login");
-  }
-
   return (
-    <div className="min-h-screen bg-paper px-4 py-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="font-display text-4xl font-semibold text-ink">
-            Your groups
-          </h1>
-          <button
-            onClick={handleLogout}
-            className="text-sm text-muted hover:text-ink underline"
-          >
-            Log out
-          </button>
-        </div>
+    <div className="min-h-screen bg-paper">
+      <Navbar />
+
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <h1 className="font-display text-4xl font-semibold text-ink mb-8">
+          Your groups
+        </h1>
 
         <form onSubmit={handleCreateGroup} className="flex gap-2 mb-8">
           <input
@@ -69,6 +58,7 @@ function DashboardPage() {
             className="flex-1 border border-divider rounded-md px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-gold"
             required
           />
+
           <button
             type="submit"
             className="bg-ink text-paper font-medium rounded-md px-5 py-2 hover:opacity-90 transition"
