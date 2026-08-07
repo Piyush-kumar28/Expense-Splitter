@@ -11,6 +11,7 @@ import {
 } from "../api/groups";
 import { jwtDecode } from "jwt-decode";
 import { useAuth } from "../context/AuthContext";
+import Navbar from "../components/Navbar";
 function GroupPage() {
 
   const { groupId } = useParams();
@@ -118,7 +119,9 @@ async function handleMarkSettled(settlement, index) {
   }
 
   return (
-    <div className="min-h-screen bg-paper px-4 py-8">
+  <div className="min-h-screen bg-paper">
+    <Navbar />
+    <div className="px-4 py-8">
       <div className="max-w-2xl mx-auto">
         <Link to="/dashboard" className="text-sm text-muted hover:text-ink underline">
           ← Back to groups
@@ -303,6 +306,7 @@ async function handleMarkSettled(settlement, index) {
         </div>
       </div>
     </div>
+  </div>
   );
 }
 
