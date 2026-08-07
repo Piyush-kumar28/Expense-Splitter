@@ -131,6 +131,28 @@ async function handleMarkSettled(settlement, index) {
           {groupName}
         </h1>
 
+         <div className="bg-surface border border-divider rounded-lg p-6">
+          <h2 className="font-display text-xl font-semibold text-ink mb-4">
+            Add a member
+          </h2>
+          <form onSubmit={handleAddMember} className="flex gap-2">
+            <input
+              type="email"
+              value={memberEmail}
+              onChange={(e) => setMemberEmail(e.target.value)}
+              placeholder="Friend's email"
+              className="flex-1 border border-divider rounded-md px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-gold"
+              required
+            />
+            <button
+              type="submit"
+              className="bg-ink text-paper font-medium rounded-md px-5 py-2 hover:opacity-90 transition"
+            >
+              Add
+            </button>
+          </form>
+        </div>
+
         {error && (
           <div className="bg-negative/10 text-negative text-sm rounded-md px-4 py-3 mb-6">
             {error}
@@ -273,29 +295,6 @@ async function handleMarkSettled(settlement, index) {
   ))}
 </select>
 
-            <button
-              type="submit"
-              className="bg-ink text-paper font-medium rounded-md px-5 py-2 hover:opacity-90 transition"
-            >
-              Add
-            </button>
-          </form>
-        </div>
-
-        {/* Add member form */}
-        <div className="bg-surface border border-divider rounded-lg p-6">
-          <h2 className="font-display text-xl font-semibold text-ink mb-4">
-            Add a member
-          </h2>
-          <form onSubmit={handleAddMember} className="flex gap-2">
-            <input
-              type="email"
-              value={memberEmail}
-              onChange={(e) => setMemberEmail(e.target.value)}
-              placeholder="Friend's email"
-              className="flex-1 border border-divider rounded-md px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-gold"
-              required
-            />
             <button
               type="submit"
               className="bg-ink text-paper font-medium rounded-md px-5 py-2 hover:opacity-90 transition"
