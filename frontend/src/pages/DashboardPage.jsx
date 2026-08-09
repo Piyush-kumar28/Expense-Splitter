@@ -76,7 +76,7 @@ function DashboardPage() {
 
           <button
             type="submit"
-            className="bg-ink text-paper font-medium rounded-md px-6 py-3 hover:opacity-90 transition"
+            className="bg-ink text-paper font-medium rounded-md px-6 py-3 hover:opacity-90 transition cursor-pointer"
           >
             Create group
           </button>
@@ -122,7 +122,7 @@ function DashboardPage() {
               <div
                 key={group.id}
                 onClick={() => navigate(`/groups/${group.id}`)}
-               className="bg-surface border border-divider rounded-lg p-5 cursor-pointer hover:bg-[#faf9f6] transition"
+               className="bg-surface border border-divider rounded-lg p-5 cursor-pointer hover:border-gold hover:shadow-sm transition"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-11 h-11 rounded-md bg-paper border border-divider flex items-center justify-center font-semibold text-ink">
