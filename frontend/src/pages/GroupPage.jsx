@@ -162,7 +162,79 @@ async function handleMarkSettled(settlement, index) {
           </div>
         )}
 
-        {/* Balances section */}
+        {/* Add expense form */}
+          <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
+            <div className="mb-4">
+              <h2 className="font-display text-xl font-semibold text-ink">
+                Add an expense
+              </h2>
+
+              <p className="text-muted text-sm mt-1">
+                Record a shared expense for this group.
+              </p>
+            </div>
+
+            <form
+              onSubmit={handleAddExpense}
+              className="flex flex-col sm:flex-row gap-3"
+            >
+              <input
+                type="text"
+                value={description}
+                onChange={(e) =>
+                  setDescription(e.target.value)
+                }
+                placeholder="Description"
+                className="flex-1 border border-divider rounded-md px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-gold"
+                required
+              />
+
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) =>
+                  setAmount(e.target.value)
+                }
+                placeholder="Amount"
+                step="0.01"
+                min="0.01"
+                className="w-32 border border-divider rounded-md px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-gold"
+                required
+              />
+
+              <select
+                value={paidBy}
+                onChange={(e) =>
+                  setPaidBy(e.target.value)
+                }
+                className="w-40 border border-divider rounded-md px-3 py-2 text-ink bg-surface focus:outline-none focus:ring-2 focus:ring-gold cursor-pointer font-medium"
+              >
+                <option value="">You paid</option>
+
+                {balances
+                  .filter(
+                    (b) => b.userId !== currentUserId
+                  )
+                  .map((b) => (
+                    <option
+                      key={b.userId}
+                      value={b.userId}
+                    >
+                      {b.name} paid
+                    </option>
+                  ))}
+              </select>
+
+              <button
+                type="submit"
+                className="bg-ink text-paper font-medium rounded-md px-5 py-2 hover:opacity-90 transition whitespace-nowrap cursor-pointer"
+              >
+                Add
+              </button>
+            </form>
+          </div>
+
+        
 {/* Balances section */}
 <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
   <div className="flex items-center justify-between mb-4">
@@ -182,7 +254,7 @@ async function handleMarkSettled(settlement, index) {
       {balances.map((b, i) => (
         <div
           key={b.userId || i}
-          className="flex items-center justify-between border border-divider rounded-md px-4 py-3"
+          className="flex items-center justify-between border border-divider rounded-md px-4 py-3 hover:bg-paper transition"
         >
           <div className="flex items-center gap-3">
             <div
@@ -233,12 +305,17 @@ async function handleMarkSettled(settlement, index) {
           ) : (
           <div className="space-y-2">
             {settlements.map((s, i) => (
-  <div key={i} className="flex justify-between items-center">
+ <div
+  key={i}
+  className="flex justify-between items-center gap-4 border border-divider rounded-md px-4 py-3"
+>
     <div className="text-ink">
       <span className="font-medium">{s.from}</span>
       <span className="text-muted"> → </span>
       <span className="font-medium">{s.to}</span>
-      <span className="text-muted">: ₹{s.amount.toFixed(2)}</span>
+      <span className="text-ink font-medium">
+  : ₹{s.amount.toFixed(2)}
+</span>
     </div>
   
   {s.fromUserId === currentUserId && (
@@ -298,57 +375,9 @@ async function handleMarkSettled(settlement, index) {
   )}
 </div>
 
-        {/* Add expense form */}
-        <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
-          <h2 className="font-display text-xl font-semibold text-ink">
-    Add an expense
-  </h2>
-  <p className="text-muted text-sm mt-1">
-    Record a shared expense for this group.
-  </p>
-  </div>
-          <form onSubmit={handleAddExpense} className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Description"
-              className="flex-1 border border-divider rounded-md px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-gold"
-              required
-            />
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Amount"
-              step="0.01"
-              min="0.01"
-              className="w-32 border border-divider rounded-md px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-gold"
-              required
-            />
-            
-           <select
-  value={paidBy}
-  onChange={(e) => setPaidBy(e.target.value)}
-  className="w-40 border border-divider rounded-md px-3 py-2 text-ink bg-surface focus:outline-none focus:ring-2 focus:ring-gold cursor-pointer"
->
-  <option value="">You paid</option>
-  {balances
-  .filter((b) => b.userId !== currentUserId)
-  .map((b) => (
-    <option key={b.userId} value={b.userId}>
-      {b.name} paid
-    </option>
-  ))}
-</select>
+        
+              
 
-            <button
-              type="submit"
-              className="bg-ink text-paper font-medium rounded-md px-5 py-2 hover:opacity-90 transition whitespace-nowrap cursor-pointer"
-            >
-              Add
-            </button>
-          </form>
         </div>
       </div>
     </div>
