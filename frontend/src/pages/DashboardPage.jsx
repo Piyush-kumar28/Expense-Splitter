@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyGroups, createGroup } from "../api/groups";
 import Navbar from "../components/Navbar";
 
 function DashboardPage() {
+  const [creating, setCreating] = useState(false);
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newGroupName, setNewGroupName] = useState("");
@@ -26,19 +28,22 @@ function DashboardPage() {
   }
 
   async function handleCreateGroup(e) {
-    e.preventDefault();
-    setError("");
+  e.preventDefault();
+  setError("");
+  setCreating(true);
 
-    try {
-      await createGroup(newGroupName);
-      setNewGroupName("");
-      loadGroups();
-    } catch (err) {
-      const message =
-        err.response?.data?.message || "Something went wrong";
-      setError(message);
-    }
+  try {
+    await createGroup(newGroupName);
+    setNewGroupName("");
+    loadGroups();
+  } catch (err) {
+    const message =
+      err.response?.data?.message || "Something went wrong";
+    setError(message);
+  } finally {
+    setCreating(false);
   }
+}
 
   return (
   <div className="min-h-screen bg-paper">
@@ -75,11 +80,12 @@ function DashboardPage() {
           />
 
           <button
-            type="submit"
-            className="bg-ink text-paper font-medium rounded-md px-6 py-3 hover:opacity-90 transition cursor-pointer"
-          >
-            Create group
-          </button>
+  type="submit"
+  disabled={creating}
+  className="bg-ink text-paper font-medium rounded-md px-6 py-3 hover:opacity-90 transition cursor-pointer disabled:opacity-50"
+>
+  {creating ? "Creating..." : "Create group"}
+</button>
         </form>
       </section>
 
@@ -122,10 +128,10 @@ function DashboardPage() {
               <div
                 key={group.id}
                 onClick={() => navigate(`/groups/${group.id}`)}
-               className="bg-surface border border-divider rounded-lg p-5 cursor-pointer hover:border-gold hover:shadow-sm transition"
+               className="bg-surface border border-divider rounded-lg p-5 cursor-pointer hover:border-gold hover:shadow-md hover:-translate-y-1 transition-all duration-200"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-11 h-11 rounded-md bg-paper border border-divider flex items-center justify-center font-semibold text-ink">
+                  <div className="w-11 h-11 rounded-full bg-paper border border-divider flex items-center justify-center font-semibold text-ink shadow-sm">
                     {group.name.charAt(0).toUpperCase()}
                   </div>
 
