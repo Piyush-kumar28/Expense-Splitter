@@ -1,3 +1,4 @@
+import PublicRoute from "./components/PublicRoute";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import SignupPage from "./pages/SignupPage";
@@ -10,8 +11,23 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route
+  path="/signup"
+  element={
+    <PublicRoute>
+      <SignupPage />
+    </PublicRoute>
+  }
+/>
+
+<Route
+  path="/login"
+  element={
+    <PublicRoute>
+      <LoginPage />
+    </PublicRoute>
+  }
+/>
         <Route
   path="/dashboard"
   element={
