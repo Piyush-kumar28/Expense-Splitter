@@ -123,16 +123,18 @@ async function handleMarkSettled(settlement, index) {
     <Navbar />
     <div className="px-4 py-8">
       <div className="max-w-2xl mx-auto">
-        <Link
-  to="/dashboard"
-  className="inline-flex items-center text-sm text-muted hover:text-ink transition mb-5"
->
-  ← Back to groups
-</Link>
+       <div className="mb-8">
+  <Link
+    to="/dashboard"
+    className="inline-flex items-center text-sm text-muted hover:text-ink transition mb-3 cursor-pointer"
+  >
+    ← Back to groups
+  </Link>
 
-        <h1 className="font-display text-4xl font-semibold text-ink mb-8">
-          {groupName}
-        </h1>
+  <h1 className="font-display text-4xl font-semibold text-ink">
+    {groupName}
+  </h1>
+</div>
 
          <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
           <h2 className="font-display text-xl font-semibold text-ink mb-4">
