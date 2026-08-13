@@ -27,6 +27,24 @@ export async function addExpense(groupId, description, amount, paidBy) {
   return response.data;
 }
 
+export async function updateExpense(
+  expenseId,
+  description,
+  amount,
+  paidBy
+) {
+  const response = await axiosInstance.put(
+    `/expenses/${expenseId}`,
+    {
+      description,
+      amount,
+      paidBy,
+    }
+  );
+
+  return response.data;
+}
+
 export async function getBalances(groupId) {
   const response = await axiosInstance.get(`/groups/${groupId}/balances`);
   return response.data;
@@ -56,5 +74,15 @@ export async function recordSettlement(groupId, toUserId, amount) {
     }
   );
 
+  return response.data;
+}
+
+export async function deleteExpense(expenseId) {
+  const response = await axiosInstance.delete(`/expenses/${expenseId}`);
+  return response.data;
+}
+
+export async function deleteGroup(groupId) {
+  const response = await axiosInstance.delete(`/groups/${groupId}`);
   return response.data;
 }

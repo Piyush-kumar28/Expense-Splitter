@@ -141,8 +141,13 @@ function DashboardPage() {
                     </h3>
 
                     <p className="text-sm text-muted mt-1">
-                      View group expenses
-                    </p>
+  Created on{" "}
+  {new Date(group.createdAt).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  })}
+</p>
                   </div>
                 </div>
               </div>

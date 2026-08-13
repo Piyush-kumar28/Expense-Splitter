@@ -149,6 +149,66 @@ app.post("/groups", verifyToken, async (req, res) => {
   }
 });
 
+app.delete("/groups/:groupId", verifyToken, async (req, res) => {
+  try {
+    const groupId = Number(req.params.groupId);
+
+    if (isNaN(groupId)) {
+      return res.status(400).json({ message: "Invalid group ID" });
+    }
+
+    const group = await prisma.group.findUnique({
+      where: { id: groupId },
+    });
+
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+
+    if (group.createdBy !== req.userId) {
+      return res.status(403).json({
+        message: "Only the group creator can delete this group",
+      });
+    }
+
+    await prisma.$transaction([
+      prisma.settlement.deleteMany({
+        where: { groupId: groupId },
+      }),
+
+      prisma.expenseShare.deleteMany({
+        where: {
+          expense: {
+            groupId: groupId,
+          },
+        },
+      }),
+
+      prisma.expense.deleteMany({
+        where: { groupId: groupId },
+      }),
+
+      prisma.groupMember.deleteMany({
+        where: { groupId: groupId },
+      }),
+
+      prisma.group.delete({
+        where: { id: groupId },
+      }),
+    ]);
+
+    res.status(200).json({
+      message: "Group deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+});
+
 app.post("/groups/:groupId/members", verifyToken, async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -267,6 +327,172 @@ const newExpense = await prisma.expense.create({
     res.status(500).json({ message: "Something went wrong" });
   }
 });
+
+app.put("/expenses/:expenseId", verifyToken, async (req, res) => {
+  try {
+    const expenseId = Number(req.params.expenseId);
+
+    if (isNaN(expenseId)) {
+      return res.status(400).json({ message: "Invalid expense ID" });
+    }
+
+    const description = req.body?.description?.trim();
+    const amount = Number(req.body?.amount);
+    const paidBy = req.body?.paidBy
+      ? Number(req.body.paidBy)
+      : req.userId;
+
+    if (
+      !description ||
+      typeof amount !== "number" ||
+      amount <= 0
+    ) {
+      return res.status(400).json({
+        message: "Valid description and positive amount are required",
+      });
+    }
+
+    const expense = await prisma.expense.findUnique({
+      where: { id: expenseId },
+    });
+
+    if (!expense) {
+      return res.status(404).json({
+        message: "Expense not found",
+      });
+    }
+
+    const membership = await prisma.groupMember.findFirst({
+      where: {
+        groupId: expense.groupId,
+        userId: req.userId,
+      },
+    });
+
+    if (!membership) {
+      return res.status(403).json({
+        message: "You are not a member of this group",
+      });
+    }
+
+    const groupMembers = await prisma.groupMember.findMany({
+      where: {
+        groupId: expense.groupId,
+      },
+    });
+
+    const payerIsMember = groupMembers.some(
+      (member) => member.userId === paidBy
+    );
+
+    if (!payerIsMember) {
+      return res.status(400).json({
+        message: "The selected payer is not a member of this group",
+      });
+    }
+
+    const updatedExpense = await prisma.expense.update({
+      where: {
+        id: expenseId,
+      },
+      data: {
+        description,
+        amount,
+        paidBy,
+      },
+    });
+
+    await prisma.expenseShare.deleteMany({
+      where: {
+        expenseId,
+      },
+    });
+
+    const totalPaise = Math.round(amount * 100);
+    const numMembers = groupMembers.length;
+    const basePaise = Math.floor(totalPaise / numMembers);
+    const remainderPaise = totalPaise - basePaise * numMembers;
+
+    const shareData = groupMembers.map((member, index) => {
+      const sharePaise =
+        basePaise + (index < remainderPaise ? 1 : 0);
+
+      return {
+        expenseId,
+        userId: member.userId,
+        amountOwed: sharePaise / 100,
+      };
+    });
+
+    await prisma.expenseShare.createMany({
+      data: shareData,
+    });
+
+    res.status(200).json({
+      message: "Expense updated successfully",
+      expense: updatedExpense,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+});
+
+app.delete("/expenses/:expenseId", verifyToken, async (req, res) => {
+  try {
+    const expenseId = Number(req.params.expenseId);
+
+    if (isNaN(expenseId)) {
+      return res.status(400).json({ message: "Invalid expense ID" });
+    }
+
+    const expense = await prisma.expense.findUnique({
+      where: { id: expenseId },
+    });
+
+    if (!expense) {
+      return res.status(404).json({ message: "Expense not found" });
+    }
+
+    const membership = await prisma.groupMember.findFirst({
+      where: {
+        groupId: expense.groupId,
+        userId: req.userId,
+      },
+    });
+
+    if (!membership) {
+      return res.status(403).json({
+        message: "You are not a member of this group",
+      });
+    }
+
+    await prisma.expenseShare.deleteMany({
+      where: {
+        expenseId: expenseId,
+      },
+    });
+
+    await prisma.expense.delete({
+      where: {
+        id: expenseId,
+      },
+    });
+
+    res.json({
+      message: "Expense deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+});
+
   app.get("/groups/:groupId/balances", verifyToken, async (req, res) => {
   try {
     const { groupId } = req.params;
@@ -311,12 +537,11 @@ const totalSettlementsReceived = settlementsReceived.reduce((sum, s) => sum + s.
   userId: member.userId,
   name: member.user.name,
   balance: Math.round(
-(totalPaid
-- totalOwed
-+ totalSettlementsSent
-- totalSettlementsReceived)
-*100
-)/100,
+  (totalPaid
+    - totalOwed
+    + totalSettlementsSent
+    - totalSettlementsReceived) * 100
+) / 100,
 });
     }
 
@@ -445,6 +670,146 @@ app.get("/my-groups", verifyToken, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Something went wrong" });
+  }
+});
+
+app.delete("/expenses/:expenseId", verifyToken, async (req, res) => {
+  try {
+    const { expenseId } = req.params;
+
+    if (isNaN(Number(expenseId))) {
+      return res.status(400).json({ message: "Invalid expense ID" });
+    }
+
+    const expense = await prisma.expense.findUnique({
+      where: { id: Number(expenseId) },
+    });
+
+    if (!expense) {
+      return res.status(404).json({ message: "Expense not found" });
+    }
+
+    const check = await checkGroupMembership(
+      expense.groupId,
+      req.userId
+    );
+
+    if (check.error) {
+      return res.status(check.status).json({ message: check.error });
+    }
+
+    if (expense.paidBy !== req.userId) {
+      return res.status(403).json({
+        message: "Only the person who paid this expense can delete it",
+      });
+    }
+
+    await prisma.$transaction([
+      prisma.expenseShare.deleteMany({
+        where: { expenseId: expense.id },
+      }),
+
+      prisma.expense.delete({
+        where: { id: expense.id },
+      }),
+    ]);
+
+    res.status(200).json({
+      message: "Expense deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+});
+
+app.put("/expenses/:expenseId", verifyToken, async (req, res) => {
+  try {
+    const expenseId = Number(req.params.expenseId);
+    const description = req.body?.description?.trim();
+    const amount = Number(req.body?.amount);
+
+    if (isNaN(expenseId) || !description || !amount || amount <= 0) {
+      return res.status(400).json({
+        message: "Valid description and positive amount are required",
+      });
+    }
+
+    const expense = await prisma.expense.findUnique({
+      where: { id: expenseId },
+    });
+
+    if (!expense) {
+      return res.status(404).json({
+        message: "Expense not found",
+      });
+    }
+
+    const membership = await prisma.groupMember.findFirst({
+      where: {
+        groupId: expense.groupId,
+        userId: req.userId,
+      },
+    });
+
+    if (!membership) {
+      return res.status(403).json({
+        message: "You are not a member of this group",
+      });
+    }
+
+    const groupMembers = await prisma.groupMember.findMany({
+      where: {
+        groupId: expense.groupId,
+      },
+    });
+
+    const updatedExpense = await prisma.expense.update({
+      where: { id: expenseId },
+      data: {
+        description,
+        amount,
+      },
+    });
+
+    const totalPaise = Math.round(amount * 100);
+    const numMembers = groupMembers.length;
+    const basePaise = Math.floor(totalPaise / numMembers);
+    const remainderPaise = totalPaise - basePaise * numMembers;
+
+    await prisma.expenseShare.deleteMany({
+      where: {
+        expenseId,
+      },
+    });
+
+    const shareData = groupMembers.map((member, index) => {
+      const sharePaise =
+        basePaise + (index < remainderPaise ? 1 : 0);
+
+      return {
+        expenseId,
+        userId: member.userId,
+        amountOwed: sharePaise / 100,
+      };
+    });
+
+    await prisma.expenseShare.createMany({
+      data: shareData,
+    });
+
+    res.json({
+      message: "Expense updated successfully",
+      expense: updatedExpense,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Something went wrong",
+    });
   }
 });
 
