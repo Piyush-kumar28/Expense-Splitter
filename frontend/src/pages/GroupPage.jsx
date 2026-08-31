@@ -242,7 +242,7 @@ async function handleDeleteGroup() {
   <div className="min-h-screen bg-paper">
     <Navbar />
     <div className="px-4 py-8">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-5xl mx-auto">
        <div className="mb-8">
   <Link
     to="/dashboard"
@@ -251,12 +251,12 @@ async function handleDeleteGroup() {
     ← Back to groups
   </Link>
 
-  <div className="flex items-center justify-between gap-4 mb-8">
+  <div className="flex items-center justify-between gap-4 mb-6">
   <h1 className="font-display text-4xl font-semibold text-ink">
     {groupName}
   </h1>
 
-  <div className="bg-surface border border-divider rounded-lg px-5 py-4 mb-6">
+  <div className="bg-surface border border-divider rounded-lg px-5 py-4">
   <p className="text-muted text-sm">Total group expenses</p>
   <p className="text-2xl font-semibold text-ink mt-1">
     ₹{totalExpenses.toFixed(2)}
@@ -275,8 +275,8 @@ async function handleDeleteGroup() {
 </div>
 </div>
 
-         <div className="bg-surface border border-divider rounded-lg p-6 mb-6">
-          <h2 className="font-display text-xl font-semibold text-ink mb-4">
+         <div className="bg-surface border border-divider rounded-lg p-5 mb-6">
+          <h2 className="font-display text-xl font-semibold text-ink mb-3">
             Add a member
           </h2>
           <form onSubmit={handleAddMember} className="flex gap-2">
@@ -291,7 +291,7 @@ async function handleDeleteGroup() {
             <button
   type="submit"
   disabled={addingMember}
-  className="bg-ink text-paper font-medium rounded-md px-5 py-2 hover:opacity-90 transition cursor-pointer disabled:opacity-50"
+ className="bg-ink text-paper font-medium rounded-md px-12 py-2 hover:opacity-90 transition cursor-pointer disabled:opacity-50"
 >
   {addingMember ? "Adding..." : "Add"}
 </button>
@@ -317,9 +317,9 @@ async function handleDeleteGroup() {
             </div>
 
             <form
-              onSubmit={handleAddExpense}
-              className="flex flex-col sm:flex-row gap-3"
-            >
+  onSubmit={handleAddExpense}
+  className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_8rem_10rem_auto] gap-3"
+>
               <input
                 type="text"
                 value={description}
@@ -340,7 +340,7 @@ async function handleDeleteGroup() {
                 placeholder="Amount"
                 step="0.01"
                 min="0.01"
-                className="w-32 border border-divider rounded-md px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-gold"
+               className="w-full border border-divider rounded-md px-3 py-2 text-ink focus:outline-none focus:ring-2 focus:ring-gold"
                 required
               />
 
@@ -349,7 +349,7 @@ async function handleDeleteGroup() {
                 onChange={(e) =>
                   setPaidBy(e.target.value)
                 }
-                className="w-40 border border-divider rounded-md px-3 py-2 text-ink bg-surface focus:outline-none focus:ring-2 focus:ring-gold cursor-pointer font-medium"
+                className="w-full border border-divider rounded-md px-3 py-2 text-ink bg-paper focus:outline-none focus:ring-2 focus:ring-gold cursor-pointer font-normal"
               >
                 <option value="">You paid</option>
 
@@ -370,7 +370,7 @@ async function handleDeleteGroup() {
             <button
   type="submit"
   disabled={addingExpense}
-  className="bg-ink text-paper font-medium rounded-md px-5 py-2 hover:opacity-90 transition whitespace-nowrap cursor-pointer disabled:opacity-50"
+  className="bg-ink text-paper font-medium rounded-md px-12 py-2 hover:opacity-90 transition whitespace-nowrap cursor-pointer disabled:opacity-50"
 >
   {addingExpense ? "Adding..." : "Add"}
 </button>
@@ -393,11 +393,11 @@ async function handleDeleteGroup() {
   {balances.length === 0 ? (
     <p className="text-muted text-sm">No members yet.</p>
   ) : (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       {balances.map((b, i) => (
         <div
           key={b.userId || i}
-          className="flex items-center justify-between border border-divider rounded-md px-4 py-3 hover:bg-paper transition"
+          className="flex items-center justify-between border border-divider rounded-lg px-4 py-3 hover:bg-paper transition"
         >
           <div className="flex items-center gap-3">
             <div
@@ -453,13 +453,13 @@ async function handleDeleteGroup() {
       {settlements.map((s, i) => (
         <div
           key={i}
-          className="flex justify-between items-center gap-4 border border-divider rounded-md px-4 py-3"
+          className="flex justify-between items-center gap-4 border border-divider rounded-lg px-4 py-3"
         >
           <div className="text-ink">
             <span className="font-medium">{s.from}</span>
             <span className="text-muted"> → </span>
             <span className="font-medium">{s.to}</span>
-            <span className="text-ink font-semibold whitespace-nowrap ml-2">
+            <span className="text-ink font-semibold whitespace-nowrap ml-3">
               ₹{s.amount.toFixed(2)}
             </span>
           </div>
@@ -503,12 +503,15 @@ async function handleDeleteGroup() {
   ) : (
     <div className="space-y-2">
       {expenses.map((e) => (
-        <div key={e.id}>
+        <div
+  key={e.id}
+  className="border border-divider rounded-lg overflow-hidden"
+>
           
-          {/* Expense row */}
-          <div
-            className="flex items-center justify-between gap-4 border border-divider rounded-md px-4 py-3 hover:bg-paper transition"
-          >
+  {/* Expense row */}
+  <div
+    className="flex items-center justify-between gap-4 px-4 py-3 hover:bg-paper transition"
+  >
             <div className="min-w-0">
               <p className="text-ink text-sm font-medium truncate">
                 {e.description}
@@ -535,7 +538,7 @@ async function handleDeleteGroup() {
               <button
                 type="button"
                 onClick={() => handleStartEdit(e)}
-                className="text-xs border border-divider text-ink rounded-md px-3 py-1.5 hover:bg-paper transition cursor-pointer"
+               className="text-xs border border-divider text-ink rounded-lg px-4 py-2 hover:bg-paper transition cursor-pointer"
               >
                 Edit
               </button>
@@ -543,7 +546,7 @@ async function handleDeleteGroup() {
               <button
                 type="button"
                 onClick={() => handleDeleteExpense(e.id)}
-                className="text-xs border border-divider text-negative rounded-md px-3 py-1.5 hover:bg-negative/10 transition cursor-pointer"
+                className="text-xs border border-negative/30 text-negative rounded-lg px-4 py-2 hover:bg-negative/10 transition cursor-pointer"
               >
                 Delete
               </button>
@@ -554,9 +557,9 @@ async function handleDeleteGroup() {
           {/* Edit form */}
           {editingExpenseId === e.id && (
             <form
-              onSubmit={handleUpdateExpense}
-              className="mt-2 border border-divider rounded-md p-3 flex flex-wrap gap-2"
-            >
+  onSubmit={handleUpdateExpense}
+ className="bg-paper border-t border-divider px-4 py-3 flex flex-col sm:flex-row gap-3"
+>
               <input
                 type="text"
                 value={editDescription}
@@ -564,7 +567,7 @@ async function handleDeleteGroup() {
                   setEditDescription(event.target.value)
                 }
                 placeholder="Description"
-                className="flex-1 min-w-[180px] border border-divider rounded-md px-3 py-2 text-sm"
+                className="flex-1 min-w-[180px] border border-divider rounded-lg px-3 py-2 text-sm"
                 required
               />
 
@@ -577,14 +580,14 @@ async function handleDeleteGroup() {
                 placeholder="Amount"
                 min="0.01"
                 step="0.01"
-                className="w-28 border border-divider rounded-md px-3 py-2 text-sm"
+               className="w-full sm:w-32 border border-divider rounded-lg px-3 py-2 text-sm"
                 required
               />
 
               <button
                 type="submit"
                 disabled={updatingExpense}
-                className="bg-ink text-paper rounded-md px-3 py-2 text-sm hover:opacity-80 transition disabled:opacity-50 cursor-pointer"
+                className="bg-ink text-paper rounded-lg px-4 py-2 text-sm hover:opacity-80 transition disabled:opacity-50 cursor-pointer"
               >
                 {updatingExpense ? "Saving..." : "Save"}
               </button>
@@ -596,7 +599,7 @@ async function handleDeleteGroup() {
                   setEditDescription("");
                   setEditAmount("");
                 }}
-                className="border border-divider rounded-md px-3 py-2 text-sm hover:bg-paper transition cursor-pointer"
+                className="border border-divider rounded-lg px-4 py-2 text-sm hover:bg-paper transition cursor-pointer"
               >
                 Cancel
               </button>
